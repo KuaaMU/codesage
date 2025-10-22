@@ -1,0 +1,13 @@
+[package]
+name = "codesage-refactor"
+version = "0.1.0"
+edition = "2021"
+authors = ["CodeSage Contributors"]
+license = "MIT"
+description = "Intelligent code refactoring engine"
+
+[dependencies]
+codesage-core = { path = "../codesage-core" }
+codesage-parser = { path = "../codesage-parser" }
+codesage-analyzer = { path = "../codesage-analyzer" }
+anyhow = "1.0"

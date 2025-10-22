@@ -1,0 +1,14 @@
+[package]
+name = "codesage-analyzer"
+version = "0.1.0"
+edition = "2021"
+authors = ["CodeSage Contributors"]
+license = "MIT"
+description = "Static and semantic code analysis engine"
+
+[dependencies]
+codesage-core = { path = "../codesage-core" }
+codesage-parser = { path = "../codesage-parser" }
+rayon = "1.7"
+dashmap = "5.5"
+anyhow = "1.0"

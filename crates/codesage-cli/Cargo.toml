@@ -1,0 +1,22 @@
+[package]
+name = "codesage-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["CodeSage Contributors"]
+license = "MIT"
+description = "Command-line interface for CodeSage"
+
+[dependencies]
+codesage-core = { path = "../codesage-core" }
+codesage-parser = { path = "../codesage-parser" }
+codesage-analyzer = { path = "../codesage-analyzer" }
+codesage-ai = { path = "../codesage-ai" }
+codesage-refactor = { path = "../codesage-refactor" }
+
+clap = { version = "4.4", features = ["derive"] }
+colored = "2.0"
+indicatif = "0.17"
+tokio = { version = "1.0", features = ["full"] }
+anyhow = "1.0"
+env_logger = "0.11"
+log = "0.4"

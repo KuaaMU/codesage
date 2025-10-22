@@ -1,0 +1,18 @@
+[package]
+name = "codesage-parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["CodeSage Contributors"]
+license = "MIT"
+description = "Multi-language code parser using tree-sitter"
+
+[dependencies]
+codesage-core = { path = "../codesage-core" }
+tree-sitter = "0.20"
+anyhow = "1.0"
+
+[dev-dependencies]
+# Language-specific tree-sitter parsers (add as needed)
+# tree-sitter-rust = "0.20"
+# tree-sitter-javascript = "0.20"
+# tree-sitter-typescript = "0.20"
