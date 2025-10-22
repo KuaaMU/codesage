@@ -4,7 +4,7 @@
 
 use clap::{Parser, Subcommand};
 use codesage_analyzer::{AnalysisEngine, MetricsAnalyzer};
-use codesage_core::{AnalysisContext, Language, Result};
+use codesage_core::{AnalysisContext, Result};
 use codesage_parser::CodeParser;
 use colored::Colorize;
 use std::path::PathBuf;
@@ -91,20 +91,14 @@ pub async fn run() -> Result<()> {
         Commands::Refactor { path, interactive } => {
             println!("{} Refactoring: {}", "♻️".green(), path.bold());
             println!("   Interactive: {}", interactive);
-            println!(
-                "\n{} Refactoring feature coming soon!",
-                "⚠️".yellow()
-            );
+            println!("\n{} Refactoring feature coming soon!", "⚠️".yellow());
         }
         Commands::Debt { path, output_html } => {
             println!("{} Analyzing technical debt: {}", "📊".blue(), path.bold());
             if let Some(output) = output_html {
                 println!("   Output: {}", output);
             }
-            println!(
-                "\n{} Debt analysis feature coming soon!",
-                "⚠️".yellow()
-            );
+            println!("\n{} Debt analysis feature coming soon!", "⚠️".yellow());
         }
         Commands::Fix {
             path,
@@ -116,10 +110,7 @@ pub async fn run() -> Result<()> {
                 println!("   Category: {}", cat);
             }
             println!("   Auto-apply: {}", auto_apply);
-            println!(
-                "\n{} Auto-fix feature coming soon!",
-                "⚠️".yellow()
-            );
+            println!("\n{} Auto-fix feature coming soon!", "⚠️".yellow());
         }
     }
 
@@ -127,12 +118,7 @@ pub async fn run() -> Result<()> {
 }
 
 /// Handle the review command
-async fn handle_review(
-    path: String,
-    _recursive: bool,
-    format: String,
-    use_ai: bool,
-) -> Result<()> {
+async fn handle_review(path: String, _recursive: bool, format: String, use_ai: bool) -> Result<()> {
     println!("{} Reviewing code at: {}", "🔍".cyan(), path.bold());
 
     let file_path = PathBuf::from(&path);
@@ -165,19 +151,47 @@ async fn handle_review(
                 .map_err(|e| codesage_core::CodeSageError::Unknown(e.to_string()))?;
             println!("\n{}", json);
         }
-        "text" | _ => {
+        "text" => {
             if issues.is_empty() {
                 println!("\n{} No issues found!", "✓".green().bold());
             } else {
-                println!(
-                    "\n{} Found {} issue(s):",
-                    "⚠".yellow().bold(),
-                    issues.len()
-                );
+                println!("\n{} Found {} issue(s):", "⚠".yellow().bold(), issues.len());
                 for (i, issue) in issues.iter().enumerate() {
-                    println!("\n{}. [{}] {}", i + 1, format!("{:?}", issue.severity).bold(), issue.message);
+                    println!(
+                        "\n{}. [{}] {}",
+                        i + 1,
+                        format!("{:?}", issue.severity).bold(),
+                        issue.message
+                    );
                     println!("   Category: {:?}", issue.category);
-                    println!("   Location: {}:{}", issue.location.file_path.display(), issue.location.start_line);
+                    println!(
+                        "   Location: {}:{}",
+                        issue.location.file_path.display(),
+                        issue.location.start_line
+                    );
+                    println!("   {}", issue.explanation);
+                }
+            }
+        }
+        _ => {
+            eprintln!("Unknown format: {}. Using text format.", format);
+            if issues.is_empty() {
+                println!("\n{} No issues found!", "✓".green().bold());
+            } else {
+                println!("\n{} Found {} issue(s):", "⚠".yellow().bold(), issues.len());
+                for (i, issue) in issues.iter().enumerate() {
+                    println!(
+                        "\n{}. [{}] {}",
+                        i + 1,
+                        format!("{:?}", issue.severity).bold(),
+                        issue.message
+                    );
+                    println!("   Category: {:?}", issue.category);
+                    println!(
+                        "   Location: {}:{}",
+                        issue.location.file_path.display(),
+                        issue.location.start_line
+                    );
                     println!("   {}", issue.explanation);
                 }
             }
@@ -196,7 +210,10 @@ async fn handle_review(
             Ok(review_result) => {
                 println!("\n{} AI Review Complete", "✓".green().bold());
                 if !review_result.issues.is_empty() {
-                    println!("\nAI found {} additional insight(s):", review_result.issues.len());
+                    println!(
+                        "\nAI found {} additional insight(s):",
+                        review_result.issues.len()
+                    );
                     for (i, issue) in review_result.issues.iter().enumerate() {
                         println!("\n{}. {}", i + 1, issue.message.bold());
                         println!("   {}", issue.explanation);
@@ -205,7 +222,9 @@ async fn handle_review(
             }
             Err(e) => {
                 eprintln!("\n{} AI review unavailable: {}", "⚠".yellow(), e);
-                eprintln!("   Tip: Set ANTHROPIC_API_KEY environment variable to enable AI features");
+                eprintln!(
+                    "   Tip: Set ANTHROPIC_API_KEY environment variable to enable AI features"
+                );
             }
         }
     }

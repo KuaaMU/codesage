@@ -1,8 +1,8 @@
 //! Code metrics analyzer
 
 use codesage_core::{
-    Analyzer, AnalysisContext, CodeMetrics, CodeSageError, Issue, IssueCategory, Location,
-    Result, Severity,
+    AnalysisContext, Analyzer, CodeMetrics, Issue, IssueCategory, Location, Result,
+    Severity,
 };
 use std::collections::HashSet;
 
@@ -78,7 +78,7 @@ impl MetricsAnalyzer {
 
         // Simplified MI = 171 - 5.2 * ln(V) - 0.23 * G - 16.2 * ln(LOC)
         let mi = 171.0 - 5.2 * volume.ln() - 0.23 * (cyclomatic as f32) - 16.2 * lines.ln();
-        mi.max(0.0).min(100.0)
+        mi.clamp(0.0, 100.0)
     }
 
     /// Detect code duplication (simplified)
@@ -141,12 +141,8 @@ impl MetricsAnalyzer {
         let cognitive = Self::calculate_cognitive_complexity(source);
         let maintainability = Self::calculate_maintainability_index(source, cyclomatic);
         let duplication = Self::calculate_duplication_percentage(source);
-        let technical_debt = Self::calculate_technical_debt(
-            cyclomatic,
-            cognitive,
-            duplication,
-            maintainability,
-        );
+        let technical_debt =
+            Self::calculate_technical_debt(cyclomatic, cognitive, duplication, maintainability);
 
         CodeMetrics {
             lines_of_code,

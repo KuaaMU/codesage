@@ -26,6 +26,13 @@ codesage-core = { path = "crates/codesage-core" }
 codesage-cli = { path = "crates/codesage-cli" }
 tokio = { version = "1.0", features = ["full"] }
 
+[dev-dependencies]
+tempfile = "3.0"
+tokio-test = "0.4"
+codesage-parser = { path = "crates/codesage-parser" }
+codesage-analyzer = { path = "crates/codesage-analyzer" }
+codesage-ai = { path = "crates/codesage-ai" }
+
 [profile.release]
 opt-level = 3
 lto = true

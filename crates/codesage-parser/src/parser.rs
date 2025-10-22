@@ -6,6 +6,7 @@ use tree_sitter::{Parser, Tree};
 
 /// Main code parser
 pub struct CodeParser {
+    #[allow(dead_code)]
     parser: Parser,
 }
 
@@ -27,8 +28,7 @@ impl CodeParser {
         let language = Language::from_extension(extension)
             .ok_or_else(|| CodeSageError::UnsupportedLanguage(extension.to_string()))?;
 
-        let source = std::fs::read_to_string(path)
-            .map_err(|e| CodeSageError::IoError(e))?;
+        let source = std::fs::read_to_string(path).map_err(CodeSageError::IoError)?;
 
         self.parse_source(&source, language)
     }

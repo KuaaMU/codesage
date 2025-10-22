@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use codesage_core::{
     AIReviewer, AnalysisContext, CodeMetrics, CodeReviewResult, CodeSageError, Issue,
-    IssueCategory, Location, Result, Severity, Suggestion,
+    IssueCategory, Location, Result, Severity,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,14 +74,16 @@ impl AIClient {
 
     /// Build the review prompt
     fn build_review_prompt(&self, context: &AnalysisContext) -> String {
+        let lang = format!("{:?}", context.language);
+        let lang_lower = lang.to_lowercase();
         format!(
-            r#"Please review the following {} code and provide a structured analysis:
+            r#"Please review the following {lang} code and provide a structured analysis:
 
 File: {}
 Lines of code: {}
 
 Code:
-```{}
+```{lang_lower}
 {}
 ```
 
@@ -93,10 +95,8 @@ Please analyze for:
 5. Best practices violations
 
 Provide specific, actionable feedback."#,
-            format!("{:?}", context.language),
             context.file_path.display(),
             context.source_code.lines().count(),
-            format!("{:?}", context.language).to_lowercase(),
             context.source_code
         )
     }
@@ -246,4 +246,3 @@ impl AIReviewer for AIClient {
         })
     }
 }
-

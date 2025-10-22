@@ -1,6 +1,6 @@
 //! Analysis engine implementation
 
-use codesage_core::{Analyzer, AnalysisContext, Issue, Result};
+use codesage_core::{AnalysisContext, Analyzer, Issue, Result};
 
 /// Main analysis engine
 pub struct AnalysisEngine {
