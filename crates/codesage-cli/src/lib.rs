@@ -3,8 +3,11 @@
 //! This module provides the CLI entry point and command handlers
 
 use clap::{Parser, Subcommand};
-use codesage_core::Result;
+use codesage_analyzer::{AnalysisEngine, MetricsAnalyzer};
+use codesage_core::{AnalysisContext, Language, Result};
+use codesage_parser::CodeParser;
 use colored::Colorize;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "codesage")]
@@ -29,6 +32,10 @@ enum Commands {
         /// Output format (text, json, sarif)
         #[arg(short, long, default_value = "text")]
         format: String,
+
+        /// Enable AI-powered review (requires ANTHROPIC_API_KEY)
+        #[arg(long)]
+        ai: bool,
     },
 
     /// Perform intelligent refactoring
@@ -77,20 +84,15 @@ pub async fn run() -> Result<()> {
             path,
             recursive,
             format,
+            ai,
         } => {
-            println!("{} Reviewing code at: {}", "🔍".cyan(), path.bold());
-            println!("   Recursive: {}", recursive);
-            println!("   Format: {}", format);
-            println!(
-                "\n{} CodeSage is in early development. Full functionality coming soon!",
-                "⚠️".yellow()
-            );
+            handle_review(path, recursive, format, ai).await?;
         }
         Commands::Refactor { path, interactive } => {
             println!("{} Refactoring: {}", "♻️".green(), path.bold());
             println!("   Interactive: {}", interactive);
             println!(
-                "\n{} CodeSage is in early development. Full functionality coming soon!",
+                "\n{} Refactoring feature coming soon!",
                 "⚠️".yellow()
             );
         }
@@ -100,7 +102,7 @@ pub async fn run() -> Result<()> {
                 println!("   Output: {}", output);
             }
             println!(
-                "\n{} CodeSage is in early development. Full functionality coming soon!",
+                "\n{} Debt analysis feature coming soon!",
                 "⚠️".yellow()
             );
         }
@@ -115,9 +117,96 @@ pub async fn run() -> Result<()> {
             }
             println!("   Auto-apply: {}", auto_apply);
             println!(
-                "\n{} CodeSage is in early development. Full functionality coming soon!",
+                "\n{} Auto-fix feature coming soon!",
                 "⚠️".yellow()
             );
+        }
+    }
+
+    Ok(())
+}
+
+/// Handle the review command
+async fn handle_review(
+    path: String,
+    _recursive: bool,
+    format: String,
+    use_ai: bool,
+) -> Result<()> {
+    println!("{} Reviewing code at: {}", "🔍".cyan(), path.bold());
+
+    let file_path = PathBuf::from(&path);
+
+    // Parse the file
+    let parser = CodeParser::new();
+    let parsed = parser.parse_file(&file_path)?;
+
+    println!("\n{}", "Analysis Results:".bold().underline());
+    println!("  Language: {:?}", parsed.language);
+    println!("  Lines of code: {}", parsed.line_count());
+
+    // Create analysis context
+    let context = AnalysisContext {
+        file_path: file_path.clone(),
+        source_code: parsed.source().to_string(),
+        language: parsed.language,
+    };
+
+    // Run static analysis
+    let mut engine = AnalysisEngine::new();
+    engine.register_analyzer(Box::new(MetricsAnalyzer::new()));
+
+    let issues = engine.analyze(&context)?;
+
+    // Display results based on format
+    match format.as_str() {
+        "json" => {
+            let json = serde_json::to_string_pretty(&issues)
+                .map_err(|e| codesage_core::CodeSageError::Unknown(e.to_string()))?;
+            println!("\n{}", json);
+        }
+        "text" | _ => {
+            if issues.is_empty() {
+                println!("\n{} No issues found!", "✓".green().bold());
+            } else {
+                println!(
+                    "\n{} Found {} issue(s):",
+                    "⚠".yellow().bold(),
+                    issues.len()
+                );
+                for (i, issue) in issues.iter().enumerate() {
+                    println!("\n{}. [{}] {}", i + 1, format!("{:?}", issue.severity).bold(), issue.message);
+                    println!("   Category: {:?}", issue.category);
+                    println!("   Location: {}:{}", issue.location.file_path.display(), issue.location.start_line);
+                    println!("   {}", issue.explanation);
+                }
+            }
+        }
+    }
+
+    // AI review if enabled
+    if use_ai {
+        println!("\n{} Running AI-powered review...", "🤖".cyan());
+
+        use codesage_ai::{AIClient, AIConfig};
+        use codesage_core::AIReviewer;
+
+        let ai_client = AIClient::with_config(AIConfig::default());
+        match ai_client.review(&context).await {
+            Ok(review_result) => {
+                println!("\n{} AI Review Complete", "✓".green().bold());
+                if !review_result.issues.is_empty() {
+                    println!("\nAI found {} additional insight(s):", review_result.issues.len());
+                    for (i, issue) in review_result.issues.iter().enumerate() {
+                        println!("\n{}. {}", i + 1, issue.message.bold());
+                        println!("   {}", issue.explanation);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("\n{} AI review unavailable: {}", "⚠".yellow(), e);
+                eprintln!("   Tip: Set ANTHROPIC_API_KEY environment variable to enable AI features");
+            }
         }
     }
 
