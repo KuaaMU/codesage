@@ -2,4 +2,4 @@
 
 pub mod client;
 
-pub use client::AIClient;
+pub use client::{AIClient, AIConfig};
