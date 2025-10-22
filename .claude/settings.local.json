@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cargo --version:*)",
       "Bash(gh --version:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

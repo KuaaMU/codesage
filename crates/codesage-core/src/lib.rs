@@ -8,3 +8,4 @@ pub mod traits;
 
 pub use error::{CodeSageError, Result};
 pub use models::*;
+pub use traits::*;

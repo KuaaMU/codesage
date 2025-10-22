@@ -21,8 +21,10 @@ members = [
 ]
 
 [dependencies]
-# Main binary just orchestrates the crates
+# Main binary orchestrates the crates
+codesage-core = { path = "crates/codesage-core" }
 codesage-cli = { path = "crates/codesage-cli" }
+tokio = { version = "1.0", features = ["full"] }
 
 [profile.release]
 opt-level = 3

@@ -169,6 +169,8 @@ name = "codesage"
 version = "0.1.0"
 dependencies = [
  "codesage-cli",
+ "codesage-core",
+ "tokio",
 ]
 
 [[package]]
@@ -218,6 +220,7 @@ name = "codesage-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "serde",
  "serde_json",
  "thiserror",

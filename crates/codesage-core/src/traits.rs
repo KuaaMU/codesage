@@ -1,7 +1,6 @@
 //! Core traits for CodeSage components
 
 use crate::{CodeReviewResult, Issue, Result};
-use std::path::Path;
 
 /// Trait for code analyzers
 pub trait Analyzer: Send + Sync {
