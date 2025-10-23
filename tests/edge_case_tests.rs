@@ -74,7 +74,7 @@ mod edge_case_tests {
         for _ in 0..50 {
             complex_code.push_str(" }\n");
         }
-        complex_code.push_str("}");
+        complex_code.push('}');
 
         let analyzer = codesage_analyzer::MetricsAnalyzer::new();
         let metrics = analyzer.calculate_metrics(&complex_code);
@@ -82,7 +82,7 @@ mod edge_case_tests {
         // 复杂代码应该有较高的复杂度值
         assert!(metrics.cyclomatic_complexity > 10);
         // 认知复杂度也应该很高(至少有一些嵌套)
-        assert!(metrics.cognitive_complexity >= 0); // 更宽松的断言
+        assert!(metrics.cognitive_complexity > 0); 
     }
 
     /// 测试零除和数值边界
@@ -90,7 +90,6 @@ mod edge_case_tests {
     fn test_zero_division_safety() {
         let analyzer = codesage_analyzer::MetricsAnalyzer::new();
         // 空代码不应导致除零错误
-        let analyzer = analyzer;
         let metrics = analyzer.calculate_metrics("");
 
         // 检查指标是否有效
@@ -115,7 +114,7 @@ mod edge_case_tests {
     #[test]
     fn test_file_edge_cases() {
         // 测试包含特殊字符的文件名
-        use std::fs::File;
+        
         let mut temp_file = NamedTempFile::with_suffix(".rs").unwrap();
         writeln!(temp_file, "fn test() {{ println!(\"hello\"); }}").unwrap();
         temp_file.flush().unwrap();

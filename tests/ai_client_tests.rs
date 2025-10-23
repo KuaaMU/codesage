@@ -19,8 +19,7 @@ mod tests {
     #[test]
     fn test_ai_client_creation() {
         let _client = codesage_ai::AIClient::new();
-        // 验证客户端可以成功创建
-        assert!(true);
+        // 验证客户端可以成功创建，不会panic
     }
 
     /// 测试自定义配置的 AI 客户端
@@ -33,8 +32,7 @@ mod tests {
             timeout_seconds: 30,
         };
         let _client = codesage_ai::AIClient::with_config(config);
-        // 验证自定义配置的客户端可以成功创建
-        assert!(true);
+        // 验证自定义配置的客户端可以成功创建，不会panic
     }
 
     /// 测试 AI 审查功能 (需要 API key,测试时会优雅降级)
