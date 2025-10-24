@@ -280,6 +280,7 @@ dependencies = [
  "indicatif",
  "log",
  "rayon",
+ "serde",
  "serde_json",
  "tokio",
  "walkdir",

@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod integration_tests {
-    
+
     use std::process::Command;
 
     /// 测试 CLI 基本功能

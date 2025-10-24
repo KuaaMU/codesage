@@ -1,8 +1,7 @@
 //! Code metrics analyzer
 
 use codesage_core::{
-    AnalysisContext, Analyzer, CodeMetrics, Issue, IssueCategory, Location, Result,
-    Severity,
+    AnalysisContext, Analyzer, CodeMetrics, Issue, IssueCategory, Location, Result, Severity,
 };
 use std::collections::HashSet;
 

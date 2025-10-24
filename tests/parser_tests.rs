@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use codesage_core::Language;
-    
+
     use tempfile::NamedTempFile;
 
     /// 测试语言检测功能

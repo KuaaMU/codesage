@@ -10,6 +10,7 @@ use colored::Colorize;
 use ignore::WalkBuilder;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -133,12 +134,12 @@ async fn handle_review(path: String, recursive: bool, format: String, use_ai: bo
 }
 
 /// Handle review of a single file
-async fn handle_single_file_review(
-    file_path: PathBuf,
-    format: String,
-    use_ai: bool,
-) -> Result<()> {
-    println!("{} Reviewing code at: {}", "🔍".cyan(), file_path.display().to_string().bold());
+async fn handle_single_file_review(file_path: PathBuf, format: String, use_ai: bool) -> Result<()> {
+    println!(
+        "{} Reviewing code at: {}",
+        "🔍".cyan(),
+        file_path.display().to_string().bold()
+    );
 
     // Parse the file
     let parser = CodeParser::new();
@@ -173,11 +174,7 @@ async fn handle_single_file_review(
 }
 
 /// Handle recursive review of a directory
-async fn handle_recursive_review(
-    dir_path: PathBuf,
-    format: String,
-    use_ai: bool,
-) -> Result<()> {
+async fn handle_recursive_review(dir_path: PathBuf, format: String, use_ai: bool) -> Result<()> {
     println!(
         "{} Recursively reviewing directory: {}",
         "🔍".cyan(),
@@ -192,11 +189,7 @@ async fn handle_recursive_review(
         return Ok(());
     }
 
-    println!(
-        "\n{} Found {} file(s) to review",
-        "📁".cyan(),
-        files.len()
-    );
+    println!("\n{} Found {} file(s) to review", "📁".cyan(), files.len());
 
     // Setup progress bar
     let progress = ProgressBar::new(files.len() as u64);
@@ -212,7 +205,10 @@ async fn handle_recursive_review(
     let parser = CodeParser::new();
 
     files.par_iter().for_each(|file_path| {
-        progress.set_message(format!("Analyzing {}", file_path.file_name().unwrap_or_default().to_string_lossy()));
+        progress.set_message(format!(
+            "Analyzing {}",
+            file_path.file_name().unwrap_or_default().to_string_lossy()
+        ));
 
         if let Ok(parsed) = parser.parse_file(file_path) {
             let context = AnalysisContext {
@@ -225,10 +221,11 @@ async fn handle_recursive_review(
             engine.register_analyzer(Box::new(MetricsAnalyzer::new()));
 
             if let Ok(issues) = engine.analyze(&context)
-                && !issues.is_empty() {
-                    let mut all = all_issues.lock().unwrap();
-                    all.extend(issues);
-                }
+                && !issues.is_empty()
+            {
+                let mut all = all_issues.lock().unwrap();
+                all.extend(issues);
+            }
         }
 
         progress.inc(1);
@@ -280,7 +277,10 @@ async fn handle_recursive_review(
 
     // AI review for recursive mode
     if use_ai {
-        println!("\n{} AI review is not yet supported for recursive mode", "⚠".yellow());
+        println!(
+            "\n{} AI review is not yet supported for recursive mode",
+            "⚠".yellow()
+        );
         println!("   Tip: Use --ai with single file review for AI-powered insights");
     }
 
@@ -306,9 +306,10 @@ fn collect_source_files(dir: &PathBuf) -> Result<Vec<PathBuf>> {
                 let path = entry.path();
                 if path.is_file()
                     && let Some(ext) = path.extension()
-                        && supported_extensions.contains(&ext.to_string_lossy().as_ref()) {
-                            files.push(path.to_path_buf());
-                        }
+                    && supported_extensions.contains(&ext.to_string_lossy().as_ref())
+                {
+                    files.push(path.to_path_buf());
+                }
             }
             Err(err) => {
                 eprintln!("{} Error walking directory: {}", "⚠".yellow(), err);
@@ -327,50 +328,42 @@ fn display_results(issues: &[Issue], format: &str) {
                 .unwrap_or_else(|e| format!("{{\"error\": \"{}\"}}", e));
             println!("\n{}", json);
         }
+        "sarif" => {
+            let sarif = convert_to_sarif(issues);
+            let json = serde_json::to_string_pretty(&sarif)
+                .unwrap_or_else(|e| format!("{{\"error\": \"{}\"}}", e));
+            println!("{}", json);
+        }
         "text" => {
-            if issues.is_empty() {
-                println!("\n{} No issues found!", "✓".green().bold());
-            } else {
-                println!("\n{} Found {} issue(s):", "⚠".yellow().bold(), issues.len());
-                for (i, issue) in issues.iter().enumerate() {
-                    println!(
-                        "\n{}. [{}] {}",
-                        i + 1,
-                        format!("{:?}", issue.severity).bold(),
-                        issue.message
-                    );
-                    println!("   Category: {:?}", issue.category);
-                    println!(
-                        "   Location: {}:{}",
-                        issue.location.file_path.display(),
-                        issue.location.start_line
-                    );
-                    println!("   {}", issue.explanation);
-                }
-            }
+            display_text_results(issues);
         }
         _ => {
             eprintln!("Unknown format: {}. Using text format.", format);
-            if issues.is_empty() {
-                println!("\n{} No issues found!", "✓".green().bold());
-            } else {
-                println!("\n{} Found {} issue(s):", "⚠".yellow().bold(), issues.len());
-                for (i, issue) in issues.iter().enumerate() {
-                    println!(
-                        "\n{}. [{}] {}",
-                        i + 1,
-                        format!("{:?}", issue.severity).bold(),
-                        issue.message
-                    );
-                    println!("   Category: {:?}", issue.category);
-                    println!(
-                        "   Location: {}:{}",
-                        issue.location.file_path.display(),
-                        issue.location.start_line
-                    );
-                    println!("   {}", issue.explanation);
-                }
-            }
+            display_text_results(issues);
+        }
+    }
+}
+
+/// Display results in human-readable text format
+fn display_text_results(issues: &[Issue]) {
+    if issues.is_empty() {
+        println!("\n{} No issues found!", "✓".green().bold());
+    } else {
+        println!("\n{} Found {} issue(s):", "⚠".yellow().bold(), issues.len());
+        for (i, issue) in issues.iter().enumerate() {
+            println!(
+                "\n{}. [{}] {}",
+                i + 1,
+                format!("{:?}", issue.severity).bold(),
+                issue.message
+            );
+            println!("   Category: {:?}", issue.category);
+            println!(
+                "   Location: {}:{}",
+                issue.location.file_path.display(),
+                issue.location.start_line
+            );
+            println!("   {}", issue.explanation);
         }
     }
 }
@@ -399,9 +392,190 @@ async fn run_ai_review(context: &AnalysisContext) {
         }
         Err(e) => {
             eprintln!("\n{} AI review unavailable: {}", "⚠".yellow(), e);
-            eprintln!(
-                "   Tip: Set ANTHROPIC_API_KEY environment variable to enable AI features"
+            eprintln!("   Tip: Set ANTHROPIC_API_KEY environment variable to enable AI features");
+        }
+    }
+}
+
+// ============================================================================
+// SARIF Format Support (Static Analysis Results Interchange Format)
+// ============================================================================
+
+#[derive(Serialize)]
+struct SarifReport {
+    version: String,
+    #[serde(rename = "$schema")]
+    schema: String,
+    runs: Vec<SarifRun>,
+}
+
+#[derive(Serialize)]
+struct SarifRun {
+    tool: SarifTool,
+    results: Vec<SarifResult>,
+}
+
+#[derive(Serialize)]
+struct SarifTool {
+    driver: SarifDriver,
+}
+
+#[derive(Serialize)]
+struct SarifDriver {
+    name: String,
+    version: String,
+    #[serde(rename = "informationUri")]
+    information_uri: String,
+    rules: Vec<SarifRule>,
+}
+
+#[derive(Serialize)]
+struct SarifRule {
+    id: String,
+    name: String,
+    #[serde(rename = "shortDescription")]
+    short_description: SarifMessage,
+    #[serde(rename = "fullDescription")]
+    full_description: SarifMessage,
+    #[serde(rename = "defaultConfiguration")]
+    default_configuration: SarifConfiguration,
+    #[serde(rename = "helpUri")]
+    help_uri: String,
+}
+
+#[derive(Serialize)]
+struct SarifConfiguration {
+    level: String,
+}
+
+#[derive(Serialize)]
+struct SarifMessage {
+    text: String,
+}
+
+#[derive(Serialize)]
+struct SarifResult {
+    #[serde(rename = "ruleId")]
+    rule_id: String,
+    level: String,
+    message: SarifMessage,
+    locations: Vec<SarifLocation>,
+}
+
+#[derive(Serialize)]
+struct SarifLocation {
+    #[serde(rename = "physicalLocation")]
+    physical_location: SarifPhysicalLocation,
+}
+
+#[derive(Serialize)]
+struct SarifPhysicalLocation {
+    #[serde(rename = "artifactLocation")]
+    artifact_location: SarifArtifactLocation,
+    region: SarifRegion,
+}
+
+#[derive(Serialize)]
+struct SarifArtifactLocation {
+    uri: String,
+}
+
+#[derive(Serialize)]
+struct SarifRegion {
+    #[serde(rename = "startLine")]
+    start_line: u32,
+    #[serde(rename = "startColumn")]
+    start_column: u32,
+    #[serde(rename = "endLine")]
+    end_line: u32,
+    #[serde(rename = "endColumn")]
+    end_column: u32,
+}
+
+/// Convert CodeSage issues to SARIF format
+fn convert_to_sarif(issues: &[Issue]) -> SarifReport {
+    use std::collections::HashMap;
+
+    // Collect unique rules from issues
+    let mut rules_map: HashMap<String, SarifRule> = HashMap::new();
+
+    for issue in issues {
+        if !rules_map.contains_key(&issue.id) {
+            rules_map.insert(
+                issue.id.clone(),
+                SarifRule {
+                    id: issue.id.clone(),
+                    name: issue.message.clone(),
+                    short_description: SarifMessage {
+                        text: issue.message.clone(),
+                    },
+                    full_description: SarifMessage {
+                        text: issue.explanation.clone(),
+                    },
+                    default_configuration: SarifConfiguration {
+                        level: severity_to_sarif_level(&issue.severity),
+                    },
+                    help_uri: format!("https://github.com/KuaaMU/codesage/docs/rules/{}", issue.id),
+                },
             );
         }
+    }
+
+    let rules: Vec<SarifRule> = rules_map.into_values().collect();
+
+    // Convert issues to SARIF results
+    let results: Vec<SarifResult> = issues
+        .iter()
+        .map(|issue| SarifResult {
+            rule_id: issue.id.clone(),
+            level: severity_to_sarif_level(&issue.severity),
+            message: SarifMessage {
+                text: format!("{}: {}", issue.message, issue.explanation),
+            },
+            locations: vec![SarifLocation {
+                physical_location: SarifPhysicalLocation {
+                    artifact_location: SarifArtifactLocation {
+                        uri: issue
+                            .location
+                            .file_path
+                            .display()
+                            .to_string()
+                            .replace('\\', "/"),
+                    },
+                    region: SarifRegion {
+                        start_line: issue.location.start_line as u32,
+                        start_column: issue.location.start_column as u32,
+                        end_line: issue.location.end_line as u32,
+                        end_column: issue.location.end_column as u32,
+                    },
+                },
+            }],
+        })
+        .collect();
+
+    SarifReport {
+        version: "2.1.0".to_string(),
+        schema: "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json".to_string(),
+        runs: vec![SarifRun {
+            tool: SarifTool {
+                driver: SarifDriver {
+                    name: "CodeSage".to_string(),
+                    version: env!("CARGO_PKG_VERSION").to_string(),
+                    information_uri: "https://github.com/KuaaMU/codesage".to_string(),
+                    rules,
+                },
+            },
+            results,
+        }],
+    }
+}
+
+/// Convert CodeSage severity to SARIF level
+fn severity_to_sarif_level(severity: &codesage_core::Severity) -> String {
+    match severity {
+        codesage_core::Severity::P0 => "error".to_string(),
+        codesage_core::Severity::P1 => "warning".to_string(),
+        codesage_core::Severity::P2 => "note".to_string(),
+        codesage_core::Severity::P3 => "note".to_string(),
     }
 }
